@@ -10,11 +10,14 @@ import xgboost as xgb
 from skimage.feature import local_binary_pattern
 
 # ------------------- Paths -------------------
-DOWNLOADS = "C:/Users/bhavi/Downloads"
-CNN_CHECKPOINT = f"{DOWNLOADS}/HybridCNN_embed.pth"
-XGB_MODEL = f"{DOWNLOADS}/xgb_hybrid_model.json"
-SCALER = f"{DOWNLOADS}/hybrid_scaler.pkl"
-FORGERY_MODEL = f"{DOWNLOADS}/resnet18_forgery.pth"
+# ------------------- Paths -------------------
+BASE_DRIVE = "/content/drive/MyDrive/AI_TraceFinder"
+
+CNN_CHECKPOINT = f"{BASE_DRIVE}/HybridCNN_embed.pth"
+XGB_MODEL = f"{BASE_DRIVE}/xgb_hybrid_model.json"
+SCALER = f"{BASE_DRIVE}/hybrid_scaler.pkl"
+FORGERY_MODEL = f"{BASE_DRIVE}/resnet18_forgery.pth"
+
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -127,6 +130,7 @@ if uploaded_file:
         st.image(img, caption=f"Page {i+1}", use_column_width=True)
         st.success(f"**Scanner Model:** {scanner} ({scanner_acc*100:.2f}%)")
         st.warning(f"**Forgery Detection:** {forgery} ({forgery_acc*100:.2f}%)")
+
 
 
 
