@@ -8,18 +8,33 @@ import numpy as np
 import joblib
 import xgboost as xgb
 from skimage.feature import local_binary_pattern
+import gdown, os
+
+# ------------------- Google Drive File IDs -------------------
+DRIVE_FILES = {
+    "HybridCNN_embed.pth": "11j3kBzCoFbmscirXQGmnkAxB1de0WB0c",   # CNN checkpoint
+    "resnet18_forgery.pth": "1vA8fKSoXPWWAWVUKl82BAGA-TPmwSPl1"   # Forgery model
+}
 
 # ------------------- Paths -------------------
-# ------------------- Paths -------------------
-BASE_DRIVE = "/content/drive/MyDrive/AI_TraceFinder"
+BASE_PATH = "./models"
+os.makedirs(BASE_PATH, exist_ok=True)
 
-CNN_CHECKPOINT = f"{BASE_DRIVE}/HybridCNN_embed.pth"
-XGB_MODEL = f"{BASE_DRIVE}/xgb_hybrid_model.json"
-SCALER = f"{BASE_DRIVE}/hybrid_scaler.pkl"
-FORGERY_MODEL = f"{BASE_DRIVE}/resnet18_forgery.pth"
+CNN_CHECKPOINT = f"{BASE_PATH}/HybridCNN_embed.pth"
+FORGERY_MODEL = f"{BASE_PATH}/resnet18_forgery.pth"
 
+XGB_MODEL = "xgb_hybrid_model.json"     # keep in GitHub repo
+SCALER = "hybrid_scaler.pkl"            # keep in GitHub repo
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# ------------------- Download large files -------------------
+for fname, fid in DRIVE_FILES.items():
+    fpath = os.path.join(BASE_PATH, fname)
+    if not os.path.exists(fpath):
+        url = f"https://drive.google.com/uc?id={fid}"
+        st.write(f"⏬ Downloading {fname} ...")
+        gdown.download(url, fpath, quiet=False)
 
 # ------------------- Load models -------------------
 # CNN feature extractor
@@ -130,7 +145,3 @@ if uploaded_file:
         st.image(img, caption=f"Page {i+1}", use_column_width=True)
         st.success(f"**Scanner Model:** {scanner} ({scanner_acc*100:.2f}%)")
         st.warning(f"**Forgery Detection:** {forgery} ({forgery_acc*100:.2f}%)")
-
-
-
-
