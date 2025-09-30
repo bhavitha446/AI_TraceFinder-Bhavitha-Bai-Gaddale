@@ -8,13 +8,16 @@ import numpy as np
 import joblib
 import xgboost as xgb
 from skimage.feature import local_binary_pattern
+import os
 
 # ------------------- Paths -------------------
-DOWNLOADS = "C:/Users/bhavi/Downloads"
-CNN_CHECKPOINT = f"{DOWNLOADS}/HybridCNN_embed.pth"
-XGB_MODEL = f"{DOWNLOADS}/xgb_hybrid_model.json"
-SCALER = f"{DOWNLOADS}/hybrid_scaler.pkl"
-FORGERY_MODEL = f"{DOWNLOADS}/resnet18_forgery.pth"
+MODEL_DIR = "models"
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+CNN_CHECKPOINT = os.path.join(MODEL_DIR, "HybridCNN_embed.pth")
+XGB_MODEL = os.path.join(MODEL_DIR, "xgb_hybrid_model.json")
+SCALER = os.path.join(MODEL_DIR, "hybrid_scaler.pkl")
+FORGERY_MODEL = os.path.join(MODEL_DIR, "resnet18_forgery.pth")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -82,7 +85,6 @@ def extract_hybrid_features(img):
     hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0,11), range=(0,10))
     hist = hist.astype(float) / (hist.sum() + 1e-9)
 
-    # Final feature vector = CNN (512) + handcrafted (12) = 524
     feat = np.concatenate([emb, [fft_mean, fft_std], hist])
     return feat.reshape(1, -1)
 
@@ -119,7 +121,6 @@ if uploaded_file:
         img = Image.open(uploaded_file)
         images = [img.convert("L")]
     
-    # Process all pages/images
     for i, img in enumerate(images):
         scanner, scanner_acc = predict_scanner(img)
         forgery, forgery_acc = predict_forgery(img)
@@ -127,6 +128,3 @@ if uploaded_file:
         st.image(img, caption=f"Page {i+1}", use_column_width=True)
         st.success(f"**Scanner Model:** {scanner} ({scanner_acc*100:.2f}%)")
         st.warning(f"**Forgery Detection:** {forgery} ({forgery_acc*100:.2f}%)")
-
-
-
