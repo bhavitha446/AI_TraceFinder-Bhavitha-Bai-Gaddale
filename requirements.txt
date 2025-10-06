@@ -7,6 +7,5 @@ seaborn==0.13.0
 pillow==9.4.0
 opencv-python-headless==4.8.0.74
 scipy==1.12.0
-torch==2.0.1
-torchvision==0.15.2
-torchaudio==2.0.2
+# Torch CPU-only wheels URLs may be needed externally
+# Temporarily remove torchaudio to isolate issue
