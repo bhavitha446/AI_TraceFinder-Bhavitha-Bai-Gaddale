@@ -8,23 +8,33 @@ import numpy as np
 import joblib
 import xgboost as xgb
 from skimage.feature import local_binary_pattern
-import os
+import os, requests
 
-# ------------------- Paths -------------------
-MODEL_DIR = "models"
-os.makedirs(MODEL_DIR, exist_ok=True)
+# ------------------- Helper: Download models from GitHub -------------------
+def download_file(url, filename):
+    if not os.path.exists(filename):
+        st.write(f"📥 Downloading {filename} ...")
+        r = requests.get(url)
+        with open(filename, "wb") as f:
+            f.write(r.content)
+    return filename
 
-CNN_CHECKPOINT = os.path.join(MODEL_DIR, "HybridCNN_embed.pth")
-XGB_MODEL = os.path.join(MODEL_DIR, "xgb_hybrid_model.json")
-SCALER = os.path.join(MODEL_DIR, "hybrid_scaler.pkl")
-FORGERY_MODEL = os.path.join(MODEL_DIR, "resnet18_forgery.pth")
+# ------------------- GitHub raw URLs -------------------
+BASE_URL = "https://raw.githubusercontent.com/bhavitha446/AI_TraceFinder-Bhavitha-Bai-Gaddale/main"
 
+CNN_CHECKPOINT = download_file(f"{BASE_URL}/HybridCNN_embed.pth", "HybridCNN_embed.pth")
+XGB_MODEL = download_file(f"{BASE_URL}/xgb_hybrid_model.json", "xgb_hybrid_model.json")
+SCALER = download_file(f"{BASE_URL}/hybrid_scaler.pkl", "hybrid_scaler.pkl")
+FORGERY_MODEL = download_file(f"{BASE_URL}/resnet18_forgery.pth", "resnet18_forgery.pth")
+
+# ------------------- Device -------------------
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ------------------- Load models -------------------
 # CNN feature extractor
 chk = torch.load(CNN_CHECKPOINT, map_location=DEVICE)
 classes = chk["classes"]
+
 cnn_model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
 cnn_model.conv1 = nn.Conv2d(1, 64, 7, 2, 3, bias=False)
 cnn_model.fc = nn.Identity()
@@ -37,7 +47,7 @@ xgb_model = xgb.XGBClassifier()
 xgb_model.load_model(XGB_MODEL)
 scaler = joblib.load(SCALER)
 
-# Forgery model
+# Forgery detection model
 forgery_model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
 forgery_model.fc = nn.Linear(forgery_model.fc.in_features, 2)
 forgery_model.load_state_dict(torch.load(FORGERY_MODEL, map_location=DEVICE))
@@ -51,6 +61,7 @@ cnn_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.5],[0.5])
 ])
+
 forgery_transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=3),
     transforms.Resize((224,224)),
@@ -104,7 +115,7 @@ def predict_forgery(img):
     return forgery_classes[pred], float(prob)
 
 # ------------------- Streamlit UI -------------------
-st.title("📑 Scanner Identification + Forgery Detection")
+st.title("🧠 AI TraceFinder: Scanner Identification + Forgery Detection")
 
 uploaded_file = st.file_uploader(
     "Upload PDF / TIFF / JPG / PNG", 
@@ -112,15 +123,16 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
-    st.write(f"Uploaded file: {uploaded_file.name}")
-    
+    st.write(f"📄 Uploaded file: {uploaded_file.name}")
+
     # Convert PDF to images if needed
     if uploaded_file.name.lower().endswith(".pdf"):
         images = pdf_to_images(uploaded_file)
     else:
         img = Image.open(uploaded_file)
         images = [img.convert("L")]
-    
+
+    # Process all pages/images
     for i, img in enumerate(images):
         scanner, scanner_acc = predict_scanner(img)
         forgery, forgery_acc = predict_forgery(img)
